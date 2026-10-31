@@ -93,6 +93,7 @@ input:focus,textarea:focus{outline:2px solid var(--y);border-color:var(--y)}
 .res{margin:16px 0 4px;padding:12px 14px;border-radius:12px;background:rgba(255,196,0,.2);font-weight:700;font-size:.95rem}
 .go{width:100%;margin-top:12px;background:var(--wa);color:#fff;box-shadow:0 5px 0 #14793f}
 .nota{font-size:.82rem;color:var(--mut);margin:12px 0 0}
+.erro{display:none;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:#fde4e0;color:#8a1c10;font-weight:700;font-size:.9rem}
 
 /* CONTACT */
 .contact{display:grid;gap:20px;align-items:center}
@@ -223,6 +224,7 @@ footer{padding:0 22px 100px;line-height:1.9}
       <label for="obs">OBSERVAÇÕES (bagagem, passageiros...)</label><textarea id="obs" rows="2"></textarea>
       <div class="res" id="res">Selecione data e horário.</div>
       <a class="b go" id="go" href="#" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+      <p class="erro" id="erro" role="alert"></p>
       <p class="nota">O valor é combinado diretamente comigo na conversa.</p>
     </div>
   </div>
@@ -241,7 +243,7 @@ footer{padding:0 22px 100px;line-height:1.9}
   </div>
 </section>
 <div class="chk"></div>
-<footer><br>© Fabio Rodrigues · Táxi em São Paulo<br><b>Feito por João Rodrigues · 2026</b></footer>
+<footer><br>© Fabio Rodrigues · Táxi em São Paulo<br><b>Feito por João Rodrigues 2026</b></footer>
 <a class="fab" href="tel:+5511974749612">📞 Ligar</a>
 
 <script>
@@ -299,9 +301,21 @@ $("next").onclick=function(){vis=new Date(vis.getFullYear(),vis.getMonth()+1,1);
 
 $("go").onclick=function(e){
   var nome=$("nome").value.trim(),tel=$("tel").value.trim(),o=$("orig").value.trim(),d=$("dest").value.trim(),ob=$("obs").value.trim();
-  if(!selD||!selT||!nome||tel.replace(/\D/g,"").length<10||!o||!d){
-    e.preventDefault();alert("Escolha a data e o horário e preencha nome, WhatsApp, embarque e destino.");return;
+  var falta=[];
+  if(!selD)falta.push("o dia no calendário");
+  else if(!selT)falta.push("o horário (toque em um horário)");
+  if(!nome)falta.push("seu nome");
+  if(tel.replace(/\D/g,"").length<10)falta.push("seu WhatsApp com DDD, ex.: (11) 97474-9612");
+  if(!o)falta.push("o local de embarque");
+  if(!d)falta.push("o destino");
+  var er=$("erro");
+  if(falta.length){
+    e.preventDefault();
+    er.textContent="Falta preencher: "+falta.join("; ")+".";er.style.display="block";
+    if(!selD||!selT)$("cal").scrollIntoView({behavior:"smooth",block:"center"});
+    return;
   }
+  er.style.display="none";
   var ln="━━━━━━━━━━━━━━━";
   var msg="Olá Fabio! Quero agendar uma corrida.\n\n*🚖 PEDIDO DE AGENDAMENTO*\n"+ln+
     "\n👤 *Nome:* "+nome+
