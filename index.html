@@ -93,6 +93,10 @@ input:focus,textarea:focus{outline:2px solid var(--y);border-color:var(--y)}
 .res{margin:16px 0 4px;padding:12px 14px;border-radius:12px;background:rgba(255,196,0,.2);font-weight:700;font-size:.95rem}
 .go{width:100%;margin-top:12px;background:var(--wa);color:#fff;box-shadow:0 5px 0 #14793f}
 .nota{font-size:.82rem;color:var(--mut);margin:12px 0 0}
+.ac{display:flex;align-items:center;gap:9px;margin:9px 0 0;font-weight:700;font-size:.85rem;letter-spacing:0;cursor:pointer}
+.ac input{width:20px;height:20px;padding:0;margin:0;accent-color:#e0a800;flex:none}
+input:disabled{opacity:.55;font-style:italic}
+.sm,.sm body{scroll-behavior:auto!important}
 .erro{display:none;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:#fde4e0;color:#8a1c10;font-weight:700;font-size:.9rem}
 
 /* CONTACT */
@@ -220,7 +224,9 @@ footer{padding:0 22px 100px;line-height:1.9}
       <label for="nome">SEU NOME</label><input id="nome" autocomplete="name">
       <label for="tel">SEU WHATSAPP</label><input id="tel" type="tel" inputmode="tel" placeholder="(11) 90000-0000" autocomplete="tel">
       <label for="orig">LOCAL DE EMBARQUE</label><input id="orig" placeholder="Rua, número, bairro">
+      <label class="ac"><input type="checkbox" id="orig_ac"> A combinar pelo WhatsApp</label>
       <label for="dest">DESTINO</label><input id="dest" placeholder="Ex.: Aeroporto de Congonhas">
+      <label class="ac"><input type="checkbox" id="dest_ac"> A combinar pelo WhatsApp</label>
       <label for="obs">OBSERVAÇÕES (bagagem, passageiros...)</label><textarea id="obs" rows="2"></textarea>
       <div class="res" id="res">Selecione data e horário.</div>
       <a class="b go" id="go" href="#" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
@@ -254,7 +260,7 @@ var MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto
 var SEM=["D","S","T","Q","Q","S","S"];
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function br(d){return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear()}
-function dia(d){return ["domingo","segunda","terça","quarta","quinta","sexta","sábado"][d.getDay()]}
+function dia(d){return ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"][d.getDay()]}
 
 function cal(){
   $("mes").textContent=MESES[vis.getMonth()]+" "+vis.getFullYear();
@@ -294,13 +300,18 @@ $("cal").onclick=function(e){
 $("times").onclick=function(e){
   var b=e.target.closest(".t");if(!b||b.disabled)return;
   selT=b.dataset.t;horas();resumo();
-  if(innerWidth<860)setTimeout(function(){$("dados").scrollIntoView({behavior:"smooth",block:"start"})},150);
+  if(innerWidth<860)setTimeout(function(){smoothTo($("dados"),-12)},150);
 };
 $("prev").onclick=function(){vis=new Date(vis.getFullYear(),vis.getMonth()-1,1);cal()};
 $("next").onclick=function(){vis=new Date(vis.getFullYear(),vis.getMonth()+1,1);cal()};
 
+function val(id){return $(id+"_ac").checked?"A combinar pelo WhatsApp":$(id).value.trim()}
+["orig","dest"].forEach(function(id){
+  var c=$(id+"_ac"),i=$(id),ph=i.placeholder;
+  c.onchange=function(){i.disabled=c.checked;i.placeholder=c.checked?"A combinar pelo WhatsApp":ph;if(c.checked)i.value=""};
+});
 $("go").onclick=function(e){
-  var nome=$("nome").value.trim(),tel=$("tel").value.trim(),o=$("orig").value.trim(),d=$("dest").value.trim(),ob=$("obs").value.trim();
+  var nome=$("nome").value.trim(),tel=$("tel").value.trim(),o=val("orig"),d=val("dest"),ob=$("obs").value.trim();
   var falta=[];
   if(!selD)falta.push("o dia no calendário");
   else if(!selT)falta.push("o horário (toque em um horário)");
@@ -312,21 +323,21 @@ $("go").onclick=function(e){
   if(falta.length){
     e.preventDefault();
     er.textContent="Falta preencher: "+falta.join("; ")+".";er.style.display="block";
-    if(!selD||!selT)$("cal").scrollIntoView({behavior:"smooth",block:"center"});
+    if(!selD||!selT)smoothTo($("cal"),-120);
     return;
   }
   er.style.display="none";
-  var ln="━━━━━━━━━━━━━━━";
-  var msg="Olá Fabio! Quero agendar uma corrida.\n\n*🚖 PEDIDO DE AGENDAMENTO*\n"+ln+
-    "\n👤 *Nome:* "+nome+
-    "\n📱 *WhatsApp:* "+tel+
-    "\n📅 *Data:* "+dia(selD)+", "+br(selD)+
-    "\n🕒 *Horário:* "+selT+
-    "\n📍 *Embarque:* "+o+
-    "\n🏁 *Destino:* "+d+
-    "\n📝 *Observações:* "+(ob||"Nenhuma")+
-    "\n"+ln+"\nAguardo sua confirmação e o valor da corrida. Obrigado!";
-  $("go").href="https://wa.me/"+FONE+"?text="+encodeURIComponent(msg);
+  var msg="Olá, Fabio! Gostaria de agendar uma corrida.\n\n"+
+    "*PEDIDO DE AGENDAMENTO*\n\n"+
+    "*Nome:* "+nome+"\n"+
+    "*WhatsApp:* "+tel+"\n"+
+    "*Data:* "+dia(selD)+", "+br(selD)+"\n"+
+    "*Horário:* "+selT+"\n"+
+    "*Embarque:* "+o+"\n"+
+    "*Destino:* "+d+"\n"+
+    "*Observações:* "+(ob||"Nenhuma")+"\n\n"+
+    "Aguardo sua confirmação. Obrigado!";
+  $("go").href="https://api.whatsapp.com/send?phone="+FONE+"&text="+encodeURIComponent(msg);
 };
 cal();
 
@@ -338,6 +349,63 @@ document.documentElement.classList.add("js");
   var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add("in");io.unobserve(x.target)}})},{threshold:.12,rootMargin:"0px 0px -6% 0px"});
   els.forEach(function(e){io.observe(e)});
   setTimeout(function(){els.forEach(function(e){e.classList.add("in")})},4000);
+})();
+
+(function(){
+  var rm=matchMedia("(prefers-reduced-motion:reduce)").matches, anim=0, wheel=0, cur=0, tgt=0;
+  window.smoothTo=function(el,off){
+    var y=el.getBoundingClientRect().top+scrollY+(off||0);
+    if(rm){scrollTo(0,y);return}
+    go(y);
+  };
+  if(rm)return;
+  document.documentElement.classList.add("sm");
+  function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+  function max(){return document.documentElement.scrollHeight-innerHeight}
+  function stop(){anim=0;wheel=0}
+  function go(y){
+    stop();
+    y=Math.max(0,Math.min(y,max()));
+    var s=scrollY,d=y-s,dur=Math.min(1200,Math.max(650,Math.abs(d)*.55)),t0=null,id=anim=Math.random()+1;
+    function step(t){
+      if(anim!==id)return;
+      if(t0===null)t0=t;
+      var p=Math.min((t-t0)/dur,1);
+      scrollTo(0,s+d*ease(p));
+      if(p<1)requestAnimationFrame(step);else{anim=0;cur=tgt=scrollY}
+    }
+    requestAnimationFrame(step);
+  }
+  document.addEventListener("click",function(e){
+    var a=e.target.closest&&e.target.closest('a[href^="#"]');
+    if(!a||a.getAttribute("href").length<2)return;
+    var el=document.querySelector(a.getAttribute("href"));
+    if(!el)return;
+    e.preventDefault();
+    go(el.getBoundingClientRect().top+scrollY-8);
+  });
+  addEventListener("scroll",function(){if(!anim&&!wheel){cur=tgt=scrollY}},{passive:true});
+  ["touchstart","keydown","mousedown"].forEach(function(n){addEventListener(n,stop,{passive:true})});
+  if(matchMedia("(pointer:fine)").matches){
+    cur=tgt=scrollY;
+    addEventListener("wheel",function(e){
+      if(e.ctrlKey||e.defaultPrevented)return;
+      var ov=e.target.closest&&e.target.closest("textarea,input,select");
+      if(ov)return;
+      e.preventDefault();
+      anim=0;
+      var dy=e.deltaMode===1?e.deltaY*34:e.deltaY;
+      if(!wheel)cur=scrollY;
+      tgt=Math.max(0,Math.min((wheel?tgt:scrollY)+dy,max()));
+      if(!wheel){wheel=1;requestAnimationFrame(loop)}
+    },{passive:false});
+    function loop(){
+      if(!wheel)return;
+      cur+=(tgt-cur)*.11;
+      if(Math.abs(tgt-cur)<.5){cur=tgt;scrollTo(0,cur);wheel=0;return}
+      scrollTo(0,cur);requestAnimationFrame(loop);
+    }
+  }
 })();
 </script>
 </body>
